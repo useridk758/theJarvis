@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jarvis AI | Personal Assistant</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-secondary: #8b949e;
+      --accent: #58a6ff;
+      --accent-glow: rgba(88, 166, 255, 0.4);
+      --success: #238636;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      width: 32px; 
+      height: 32px; 
+      border-radius: 50%;
+      background: var(--accent);
+      display: grid; 
+      place-items: center;
+      font-weight: bold; 
+      color: var(--bg);
+      box-shadow: 0 0 14px var(--accent-glow);
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+
+    h1 { font-size: 18px; letter-spacing: 1px; font-weight: 600; }
+    h1 span { color: var(--text-secondary); font-weight: 400; margin-left: 6px; }
+
+    /* Layout */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 280px 1fr 260px;
+      gap: 16px;
+      padding: 16px;
+      min-height: 0;
+    }
+
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; overflow-y: auto; }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel h2 { 
+      font-size: 12px; 
+      color: var(--text-secondary); 
+      text-transform: uppercase; 
+      letter-spacing: 0.08em; 
+      margin-bottom: 12px; 
+      font-weight: 600;
+    }
+
+    /* Center Orb */
+    .orb-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-height: 300px;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      max-width: 380px;
+      max-height: 380px;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      color: var(--accent);
+      font-size: 13px;
+      min-height: 20px;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(88,166,255,0.3);
+    }
+
+    /* Log */
+    .log {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .log li {
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(88,166,255,0.04);
+      border-left: 3px solid var(--accent);
+      animation: fadeIn 0.3s ease;
+      line-height: 1.5;
+    }
+
+    .log li.user {
+      border-left-color: var(--success);
+      background: rgba(35,134,54,0.05);
+    }
+
+    .log .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    .log .meta strong { color: var(--text); font-size: 12px; }
+    .log .meta time { color: var(--text-secondary); }
+
+    /* Commands */
+    .commands {
+      list-style: none;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+    }
+
+    .commands li {
+      padding: 8px;
+      border-radius: 6px;
+      background: rgba(88,166,255,0.05);
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+
+    .commands li:hover {
+      background: rgba(88,166,255,0.12);
+      border-color: var(--border);
+      transform: translateX(2px);
+    }
+
+    .commands code {
+      color: var(--accent);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+    }
+
+    /* Input */
+    .input-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus { border-color: var(--accent); }
+
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    button:hover { opacity: 0.9; }
+    button:active { transform: scale(0.97); }
+
+    button.secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .mic-btn {
+      width: 40px; 
+      height: 40px; 
+      border-radius: 50%;
+      display: grid; 
+      place-items: center;
+      padding: 0; 
+      font-size: 18px;
+      box-shadow: 0 0 0 3px transparent;
+      transition: box-shadow 0.2s, background 0.2s;
+    }
+
+    .mic-btn.active {
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      background: #1f6feb;
+      border-color: #1f6feb;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">J</div>
+  <h1>JARVIS AI <span>— Personal Assistant</span></h1>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Command Log</h2>
+    <ul id="log" class="log"></ul>
+  </section>
+
+  <section class="orb-wrap">
+    <canvas id="orb" width="400" height="400"></canvas>
+    <div id="status" class="status">Initializing...</div>
+  </section>
+
+  <section class="panel">
+    <h2>Suggested Commands</h2>
+    <ul class="commands" id="commands">
+      <li><code>"Hello Jarvis"</code></li>
+      <li><code>"Open latest news"</code></li>
+      <li><code>"Solve 15 times 8"</code></li>
+      <li><code>"What time is it?"</code></li>
+      <li><code>"Open GitHub trending"</code></li>
+      <li><code>"Search GitHub for rust"</code></li>
+      <li><code>"What can you do?"</code></li>
+    </ul>
+  </section>
+</main>
+
+<div class="input-bar">
+  <button id="micBtn" class="mic-btn secondary" title="Toggle microphone">🎤</button>
+  <input type="text" id="textInput" placeholder="Type a command or click the microphone to speak..." autocomplete="off">
+  <button id="sendBtn">Send</button>
+</div>
+
+<script>
+  /* ========== CANVAS ORB ========== */
+  const canvas = document.getElementById('orb');
+  const ctx = canvas.getContext('2d');
+  let W, H, CX, CY;
+  let time = 0;
+  let state = 'idle'; // idle | listening | thinking | speaking
+
+  function resizeOrb() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    W = rect.width;
+    H = rect.height;
+    CX = W / 2;
+    CY = H / 2;
+  }
+  window.addEventListener('resize', resizeOrb);
+  resizeOrb();
+
+  function drawRing(r, color, width) {
+    ctx.beginPath();
+    ctx.arc(CX, CY, r, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.stroke();
+  }
+
+  function drawCore(r, alpha) {
+    const grad = ctx.createRadialGradient(CX, CY, 0, CX, CY, r);
+    grad.addColorStop(0, `rgba(255,255,255,${alpha})`);
+    grad.addColorStop(0.5, `rgba(88,166,255,${alpha * 0.9})`);
+    grad.addColorStop(1, `rgba(88,166,255,0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(CX, CY, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function draw() {
+    // Trail fade
+    ctx.fillStyle = 'rgba(13, 17, 23, 0.22)';
+    ctx.fillRect(0, 0, W, H);
+
+    time += 0.05;
+    const baseR = Math.min(W, H) * 0.18;
+
+    if (state === 'idle') {
+      const r = baseR + Math.sin(time) * 5;
+      drawRing(r, `rgba(88,166,255,0.25)`, 2);
+      drawRing(r + 32, `rgba(88,166,255,0.12)`, 1.5);
+      drawCore(r * 0.55 + Math.sin(time) * 2, 0.55);
+    } 
+    else if (state === 'listening') {
+      const pulse = Math.sin(time * 3) * 7;
+      drawRing(baseR + pulse, `rgba(88,166,255,0.6)`, 3);
+      drawRing(baseR + 38 + pulse, `rgba(88,166,255,0.25)`, 2);
+
+      // Scanner arc
+      ctx.save();
+      ctx.translate(CX, CY);
+      ctx.rotate(time * 2.5);
+      ctx.beginPath();
+      ctx.arc(0, 0, baseR + 12, 0, Math.PI * 1.3);
+      ctx.strokeStyle = 'rgba(88,166,255,0.85)';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+
+      drawCore(baseR * 0.55, 0.85);
+    } 
+    else if (state === 'thinking') {
+      ctx.save();
+      ctx.translate(CX, CY);
+      ctx.rotate(time * 10);
+      ctx.beginPath();
+      ctx.arc(0, 0, baseR, 0, Math.PI * 1.6);
+      ctx.strokeStyle = 'rgba(88,166,255,0.7)';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.rotate(Math.PI);
+      ctx.beginPath();
+      ctx.arc(0, 0, baseR + 20, 0, Math.PI * 1.6);
+      ctx.strokeStyle = 'rgba(88,166,255,0.4)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+      drawCore(baseR * 0.5 + Math.sin(time * 6) * 3, 0.75);
+    } 
+    else if (state === 'speaking') {
+      const jitter = (Math.random() - 0.5) * 10;
+      const intensity = 1 + Math.random() * 0.4;
+
+      // Jittery rings
+      for (let i = 0; i < 4; i++) {
+        const r = baseR + i * 28 + jitter + Math.sin(time * 14 + i * 2) * 9;
+        const alpha = (0.45 - i * 0.07) * intensity;
+        drawRing(r, `rgba(88,166,255,${alpha})`, 2 + Math.random() * 2.5);
+      }
+
+      // Sound waves expanding
+      for (let i = 0; i < 5; i++) {
+        const waveAge = (time * 70 + i * 55) % 350;
+        const waveR = baseR + waveAge * 0.6;
+        const alpha = Math.max(0, 1 - waveAge / 350) * 0.35 * intensity;
+        ctx.beginPath();
+        ctx.arc(CX, CY, waveR, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(88,166,255,${alpha})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      drawCore(baseR * 0.5 + jitter * 0.6, 0.9 + Math.random() * 0.25);
+    }
+
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  /* ========== STATE & UI ========== */
+  const statusEl = document.getElementById('status');
+  const logEl = document.getElementById('log');
+  const micBtn = document.getElementById('micBtn');
+  const textInput = document.getElementById('textInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  function setStatus(msg) { statusEl.textContent = msg; }
+
+  function setState(newState) {
+    state = newState;
+    if (newState === 'idle') {
+      setStatus('Idle — Awaiting command');
+      micBtn.classList.remove('active');
+    } else if (newState === 'listening') {
+      setStatus('Listening...');
+      micBtn.classList.add('active');
+    } else if (newState === 'thinking') {
+      setStatus('Processing...');
+    } else if (newState === 'speaking') {
+      setStatus('Speaking...');
+    }
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function addLog(who, text, isHtml = false) {
+    const li = document.createElement('li');
+    li.className = who === 'You' ? 'user' : '';
+    const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const meta = `<div class="meta"><strong>${escapeHtml(who)}</strong><time>${t}</time></div>`;
+    li.innerHTML = meta + (isHtml ? text : escapeHtml(text));
+    logEl.appendChild(li);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  /* ========== JARVIS LOGIC ========== */
+  let micActive = false;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  const jarvis = {
+    isSpeaking: false,
+    synth: window.speechSynthesis,
+    recognition: null,
+    voice: null,
+
+    init() {
+      this.loadVoice();
+      if (this.synth.onvoiceschanged !== undefined) {
+        this.synth.onvoiceschanged = () => this.loadVoice();
+      }
+
+      if (SpeechRecognition) {
+        this.recognition = new SpeechRecognition();
+        this.recognition.lang = 'en-US';
+        this.recognition.interimResults = false;
+        this.recognition.maxAlternatives = 1;
+        this.recognition.continuous = false;
+
+        this.recognition.onstart = () => setState('listening');
+        this.recognition.onresult = (e) => {
+          const transcript = e.results[0][0].transcript;
+          this.handleCommand(transcript);
+        };
+        this.recognition.onerror = (e) => {
+          console.warn('Speech error', e.error);
+          if (micActive) setState('listening');
+          else setState('idle');
+        };
+        this.recognition.onend = () => {
+          if (micActive && !this.isSpeaking) {
+            setTimeout(() => this.listen(), 200);
+          } else if (!this.isSpeaking) {
+            setState('idle');
+            micBtn.classList.remove('active');
+          }
+        };
+      } else {
+        setStatus('Voice not supported — type commands below');
+        micBtn.style.display = 'none';
+      }
+
+      addLog('Jarvis', 'Welcome sir. I am Jarvis, your personal assistant. Click the microphone to speak, or type a command.');
+      setState('idle');
+    },
+
+    loadVoice() {
+      const voices = this.synth.getVoices();
+      this.voice = voices.find(v => v.name.includes('Google US English'))
+        || voices.find(v => v.lang === 'en-US' && /male|daniel|fred|bruce/i.test(v.name))
+        || voices.find(v => v.lang === 'en-US')
+        || voices[0];
+    },
+
+    listen() {
+      if (this.recognition) {
+        try { this.recognition.start(); } catch (e) {}
+      }
+    },
+
+    stopListening() {
+      if (this.recognition) {
+        try { this.recognition.stop(); } catch (e) {}
+      }
+    },
+
+    speak(text) {
+      if (!text) return;
+      this.synth.cancel();
+      this.isSpeaking = true;
+      setState('speaking');
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.voice = this.voice;
+      utter.rate = 1.05;
+      utter.pitch = 0.95;
+      utter.volume = 1;
+
+      utter.onend = () => {
+        this.isSpeaking = false;
+        if (micActive) {
+          setState('listening');
+          this.listen();
+        } else {
+          setState('idle');
+        }
+      };
+
+      utter.onerror = () => {
+        this.isSpeaking = false;
+        setState('idle');
+      };
+
+      this.synth.speak(utter);
+      addLog('Jarvis', text);
+    },
+
+    handleCommand(raw) {
+      const cmd = raw.toLowerCase().trim();
+      addLog('You', raw);
+      setState('thinking');
+      setTimeout(() => this.process(cmd), 350);
+    },
+
+    process(cmd) {
+      // Greeting
+      if (/\b(hello|hi jarvis|hey jarvis)\b/.test(cmd)) {
+        this.speak("Hello sir. I am Jarvis, your personal assistant. How may I help you today?");
+        return;
+      }
+
+      // News
+      if (cmd.includes('news') || cmd.includes('headlines')) {
+        this.speak("Opening the latest news in new tabs, sir.");
+        openNews();
+        return;
+      }
+
+      // Math — only if numbers present
+      if ((cmd.includes('math') || cmd.includes('calculate') || cmd.includes('solve') || (cmd.includes('what is') && /\d/.test(cmd)))) {
+        const result = this.evaluateMath(cmd);
+        if (result !== null) {
+          this.speak(`The answer is ${result}`);
+          return;
+        }
+      }
+
+      // Time
+      if (cmd.includes('time')) {
+        this.speak(`The current time is ${new Date().toLocaleTimeString()}`);
+        return;
+      }
+
+      // Date
+      if (cmd.includes('date')) {
+        const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        this.speak(`Today's date is ${new Date().toLocaleDateString(undefined, opts)}`);
+        return;
+      }
+
+      // GitHub open
+      if (cmd.includes('open github')) {
+        window.open('https://github.com', '_blank');
+        this.speak('Opening GitHub.');
+        return;
+      }
+
+      // GitHub trending
+      if (cmd.includes('trending')) {
+        window.open('https://github.com/trending', '_blank');
+        this.speak('Opening GitHub trending repositories.');
+        return;
+      }
+
+      // GitHub search
+      if (cmd.includes('search github')) {
+        const q = cmd.split('for')[1]?.trim() || cmd.replace('search github', '').trim();
+        if (q) {
+          window.open(`https://github.com/search?q=${encodeURIComponent(q)}`, '_blank');
+          this.speak(`Searching GitHub for ${q}`);
+        } else {
+          this.speak('What should I search for on GitHub?');
+        }
+        return;
+      }
+
+      // Help
+      if (cmd.includes('help') || cmd.includes('what can you do')) {
+        this.speak("I can open news tabs, solve mathematical expressions, tell you the time and date, open GitHub, search GitHub, and respond to your voice commands.");
+        return;
+      }
+
+      // Fallback
+      this.speak("I'm not sure I understood, sir. Try asking me to open news, solve math, or search GitHub.");
+    },
+
+    evaluateMath(text) {
+      let expr = text.toLowerCase();
+      const map = {
+        'plus': '+', 'minus': '-', 'times': '*', 'multiplied by': '*',
+        'divided by': '/', 'over': '/', 'what is': '', 'calculate': '',
+        'solve': '', 'math': ''
+      };
+      for (const [k, v] of Object.entries(map)) {
+        expr = expr.split(k).join(v);
+      }
+      expr = expr.replace(/[^0-9+\-*/().\s]/g, '').trim();
+      if (!expr || expr.length < 3) return null;
+      try {
+        return new Function('return (' + expr + ')')();
+      } catch (e) {
+        return null;
+      }
+    }
+  };
+
+  function openNews() {
+    const sites = [
+      ['Hacker News', 'https://news.ycombinator.com'],
+      ['GitHub Trending', 'https://github.com/trending'],
+      ['TechCrunch', 'https://techcrunch.com']
+    ];
+    const links = sites.map(([n, u]) => `<a href="${u}" target="_blank" style="color:var(--accent);text-decoration:underline;">${n}</a>`).join(' • ');
+    addLog('Jarvis', `Opened news tabs (allow popups if blocked): ${links}`, true);
+    sites.forEach(([_, u]) => window.open(u, '_blank'));
+  }
+
+  /* ========== INPUT HANDLERS ========== */
+  micBtn.addEventListener('click', () => {
+    if (!jarvis.recognition) {
+      addLog('System', 'Voice recognition is not supported in your browser.');
+      return;
+    }
+    micActive = !micActive;
+    micBtn.classList.toggle('active', micActive);
+    if (micActive) {
+      jarvis.listen();
+    } else {
+      jarvis.stopListening();
+      setState('idle');
+    }
+  });
+
+  sendBtn.addEventListener('click', () => {
+    const val = textInput.value.trim();
+    if (!val) return;
+    textInput.value = '';
+    jarvis.handleCommand(val);
+  });
+
+  textInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendBtn.click();
+  });
+
+  document.querySelectorAll('.commands li').forEach(item => {
+    item.addEventListener('click', () => {
+      const cmd = item.textContent.replace(/"/g, '').trim();
+      textInput.value = cmd;
+      jarvis.handleCommand(cmd);
+    });
+  });
+
+  /* ========== BOOT ========== */
+  window.addEventListener('DOMContentLoaded', () => {
+    jarvis.init();
+  });
+</script>
+
+</body>
+</html>
